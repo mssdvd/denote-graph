@@ -18,7 +18,7 @@ type note struct {
 }
 
 func main() {
-	var dir = "/home/davide/denote/"
+	dir := "/home/davide/denote/"
 	notes, err := parse(dir)
 	if err != nil {
 		log.Fatal(err)
@@ -28,57 +28,51 @@ func main() {
 
 func parse(dir string) ([]note, error) {
 	var notes []note
-	idre := regexp.MustCompile(`[0-9]+T[0-9]+`)
-	titlere := regexp.MustCompile(`--[\p{L}-]+`)
-	tagsre := regexp.MustCompile(`_[\p{L}]+`)
-	linkre := regexp.MustCompile(`denote:[0-9]+T[0-9]+`)
+	idRe := regexp.MustCompile(`[0-9]+T[0-9]+`)
+	titleRe := regexp.MustCompile(`--[\pL-]+`)
+	tagsRe := regexp.MustCompile(`_[\pL]+`)
+	linkRe := regexp.MustCompile(`denote:[0-9]+T[0-9]+`)
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("error accessing path %q: %v", path, err)
 		}
 
-		fname := d.Name()
-
-		id := idre.FindString(fname)
+		id := idRe.FindString(d.Name())
 		if id == "" {
 			return nil
 		}
 
-		title := titlere.FindString(fname)
+		title := titleRe.FindString(d.Name())
 		title = strings.TrimPrefix(title, "--")
 
-		tags := tagsre.FindAllString(fname, -1)
+		tags := tagsRe.FindAllString(d.Name(), -1)
 		for i := 0; i < len(tags); i++ {
 			tags[i] = strings.TrimPrefix(tags[i], "_")
 		}
 
-		dat, err := os.ReadFile(dir + fname)
+		dat, err := os.ReadFile(dir + d.Name())
 		if err != nil {
 			fmt.Printf("error reading file %q: %v", d.Name(), err)
 			return nil
 		}
-		links := linkre.FindAllString(string(dat), -1)
+		links := linkRe.FindAllString(string(dat), -1)
 		for i := 0; i < len(links); i++ {
 			links[i] = strings.TrimPrefix(links[i], "denote:")
 		}
 
 		notes = append(notes, note{id, title, tags, links})
-
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error walking the path: %v", err)
 	}
-
 	return notes, nil
 }
 
 func graph(notes []note) string {
 	var b strings.Builder
-
 	b.WriteString("digraph denote {\n")
-
 	for _, n := range notes {
 		b.WriteString(fmt.Sprintf(`"%s" [label="%s"];`, n.id, n.title))
 		b.WriteString("\n")
@@ -88,7 +82,6 @@ func graph(notes []note) string {
 		}
 		b.WriteString("}\n")
 	}
-
 	b.WriteString("}")
 	return b.String()
 }
