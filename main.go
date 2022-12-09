@@ -35,8 +35,7 @@ func parse(dir string) ([]note, error) {
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			fmt.Printf("Failure accessing a path %q: %v\n", path, err)
-			return err
+			return fmt.Errorf("error accessing path %q: %v", path, err)
 		}
 
 		fname := d.Name()
@@ -56,6 +55,7 @@ func parse(dir string) ([]note, error) {
 
 		dat, err := os.ReadFile(dir + fname)
 		if err != nil {
+			fmt.Printf("error reading file %q: %v", d.Name(), err)
 			return nil
 		}
 		links := linkre.FindAllString(string(dat), -1)
@@ -68,8 +68,7 @@ func parse(dir string) ([]note, error) {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("error walking the path: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("error walking the path: %v", err)
 	}
 
 	return notes, nil
