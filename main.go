@@ -80,19 +80,11 @@ func graph(notes []note) string {
 	b.WriteString("digraph denote {\n")
 
 	for _, n := range notes {
-		b.WriteString("\"")
-		b.WriteString(n.id)
-		b.WriteString("\" [label=\"")
-		b.WriteString(n.title)
-		b.WriteString("\"];\n")
-
-		b.WriteString("\"")
-		b.WriteString(n.id)
-		b.WriteString("\" -> {")
+		b.WriteString(fmt.Sprintf(`"%s" [label="%s"];`, n.id, n.title))
+		b.WriteString("\n")
+		b.WriteString(fmt.Sprintf(`"%s" -> {`, n.id))
 		for _, l := range n.links {
-			b.WriteString(" \"")
-			b.WriteString(l)
-			b.WriteString("\" ")
+			b.WriteString(fmt.Sprintf(`"%s" `, l))
 		}
 		b.WriteString("}\n")
 	}
