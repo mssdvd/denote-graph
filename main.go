@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(notes)
+	fmt.Println(graph(notes))
 }
 
 func parse(dir string) ([]note, error) {
@@ -73,4 +73,31 @@ func parse(dir string) ([]note, error) {
 	}
 
 	return notes, nil
+}
+
+func graph(notes []note) string {
+	var b strings.Builder
+
+	b.WriteString("digraph denote {\n")
+
+	for _, n := range notes {
+		b.WriteString("\"")
+		b.WriteString(n.id)
+		b.WriteString("\" [label=\"")
+		b.WriteString(n.title)
+		b.WriteString("\"];\n")
+
+		b.WriteString("\"")
+		b.WriteString(n.id)
+		b.WriteString("\" -> {")
+		for _, l := range n.links {
+			b.WriteString(" \"")
+			b.WriteString(l)
+			b.WriteString("\" ")
+		}
+		b.WriteString("}\n")
+	}
+
+	b.WriteString("}")
+	return b.String()
 }
