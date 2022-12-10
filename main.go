@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io/fs"
 	"log"
@@ -12,10 +13,11 @@ import (
 )
 
 type note struct {
-	id    string
-	title string
-	tags  []string
-	links []string
+	id       string
+	title    string
+	fileName string
+	tags     []string
+	links    []string
 }
 
 func main() {
@@ -28,12 +30,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(graph(notes))
+
+	filter := flag.String("f", ".*", "regex filter")
+	inclLinked := flag.Bool("l", false, "include linked notes")
+	flag.Parse()
+
+	re, err := regexp.Compile(*filter)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(graph(notes, re, *inclLinked))
 }
 
-func parse(dir string) ([]note, error) {
-	var notes []note
 	idRe := regexp.MustCompile(`[0-9]+T[0-9]+`)
+func parse(dir string) (map[string]*note, error) {
+	notes := make(map[string]*note)
 	titleRe := regexp.MustCompile(`--[\pL-]+`)
 	tagsRe := regexp.MustCompile(`_[\pL]+`)
 	linkRe := regexp.MustCompile(`denote:[0-9]+T[0-9]+`)
@@ -77,7 +88,7 @@ func parse(dir string) ([]note, error) {
 			return nil
 		}
 
-		notes = append(notes, note{id, title, tags, links})
+		notes[id] = &note{id, title, d.Name(), tags, links}
 		return nil
 	})
 	if err != nil {
@@ -86,17 +97,27 @@ func parse(dir string) ([]note, error) {
 	return notes, nil
 }
 
-func graph(notes []note) string {
+func graph(notes map[string]*note, re *regexp.Regexp, inclLinked bool) string {
+	matches := make(map[string]bool)
+	for id, n := range notes {
+		if re.MatchString(n.fileName) {
+			matches[id] = true
+		}
+	}
 	var b strings.Builder
 	b.WriteString("digraph denote {\n")
-	for _, n := range notes {
-		b.WriteString(fmt.Sprintf(`"%s" [label="%s"];`, n.id, n.title))
-		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf(`"%s" -> {`, n.id))
-		for _, l := range n.links {
-			b.WriteString(fmt.Sprintf(`"%s" `, l))
+	for id, n := range notes {
+		if matches[id] {
+			b.WriteString(fmt.Sprintf(`"%s" [label="%s"]`, n.id, n.title))
+			b.WriteString("\n")
+			b.WriteString(fmt.Sprintf(`"%s" -> {`, n.id))
+			for _, l := range n.links {
+				if matches[l] || inclLinked {
+					b.WriteString(fmt.Sprintf(`"%s" [label="%s"] `, notes[l].id, notes[l].title))
+				}
+			}
+			b.WriteString("}\n")
 		}
-		b.WriteString("}\n")
 	}
 	b.WriteString("}")
 	return b.String()
