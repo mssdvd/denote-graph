@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"log"
@@ -51,14 +52,25 @@ func parse(dir string) ([]note, error) {
 			tags[i] = strings.TrimPrefix(tags[i], "_")
 		}
 
-		dat, err := os.ReadFile(dir + d.Name())
+		f, err := os.Open(dir + d.Name())
 		if err != nil {
 			fmt.Printf("error reading file %q: %v", d.Name(), err)
 			return nil
 		}
-		links := linkRe.FindAllString(string(dat), -1)
-		for i := 0; i < len(links); i++ {
-			links[i] = strings.TrimPrefix(links[i], "denote:")
+		defer f.Close()
+
+		var links []string
+		s := bufio.NewScanner(f)
+		for s.Scan() {
+			matches := linkRe.FindAllString(s.Text(), -1)
+			for i := 0; i < len(matches); i++ {
+				matches[i] = strings.TrimPrefix(matches[i], "denote:")
+			}
+			links = append(links, matches...)
+		}
+		if err := s.Err(); err != nil {
+			fmt.Printf("error reading file %q: %v", d.Name(), err)
+			return nil
 		}
 
 		notes = append(notes, note{id, title, tags, links})
