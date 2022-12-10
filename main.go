@@ -19,7 +19,11 @@ type note struct {
 }
 
 func main() {
-	dir := "/home/davide/denote/"
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	dir := fmt.Sprintf("%s/denote/", home)
 	notes, err := parse(dir)
 	if err != nil {
 		log.Fatal(err)
