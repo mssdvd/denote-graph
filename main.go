@@ -42,12 +42,12 @@ func main() {
 	fmt.Println(graph(notes, re, *inclLinked))
 }
 
-	idRe := regexp.MustCompile(`[0-9]+T[0-9]+`)
 func parse(dir string) (map[string]*note, error) {
 	notes := make(map[string]*note)
+	idRe := regexp.MustCompile(`\d+T\d+`)
 	titleRe := regexp.MustCompile(`--[\pL-]+`)
 	tagsRe := regexp.MustCompile(`_[\pL]+`)
-	linkRe := regexp.MustCompile(`denote:[0-9]+T[0-9]+`)
+	linkRe := regexp.MustCompile(`denote:\d+T\d+`)
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
