@@ -54,6 +54,10 @@ func parse(dir string) (map[string]*note, error) {
 			return fmt.Errorf("error accessing path %q: %v", path, err)
 		}
 
+		if d.Name() == ".git" {
+			return filepath.SkipDir
+		}
+
 		id := idRe.FindString(d.Name())
 		if id == "" {
 			return nil
